@@ -1,6 +1,7 @@
 """
 This is the core labeltool module.
 """
+import cv2
 import os
 import sys
 from PyQt4.QtGui import *
@@ -16,12 +17,6 @@ from sloth.gui import MainWindow
 import logging
 
 LOG = logging.getLogger(__name__)
-
-try:
-    import okapy.videoio as okv
-except ImportError:
-    pass
-
 
 class LabelTool(QObject):
     """
@@ -354,40 +349,26 @@ class LabelTool(QObject):
         }
         return self._model._root.appendFileItem(fileitem)
 
-    def addVideoFile(self, fname):
+    def addVideoFile(self, fname, progressBar=None):
         fileitem = {
             'filename': fname,
             'class': 'video',
             'frames': [],
         }
 
-        # FIXME: OKAPI should provide a method to get all timestamps at once
-        # FIXME: Some dialog should be displayed, telling the user that the
-        # video is being loaded/indexed and that this might take a while
         LOG.info("Importing frames from %s. This may take a while..." % fname)
-        video = okv.createVideoSourceFromString(fname)
-        video = okv.toRandomAccessVideoSource(video)
 
-        # try to convert to iseq, getting all timestamps will be significantly faster
-        iseq = okv.toImageSeqReader(video)
-        if iseq is not None:
-            timestamps = iseq.getTimestamps()
-            LOG.debug("Adding %d frames" % len(timestamps))
-            fileitem['frames'] = [{'annotations': [], 'num': i,
-                                   'timestamp': ts, 'class': 'frame'}
-                                  for i, ts in enumerate(timestamps)]
-        else:
-            i = 0
-            while video.getNextFrame():
-                LOG.debug("Adding frame %d" % i)
-                ts = video.getTimestamp()
-                frame = {'annotations': [],
-                         'num': i,
-                         'timestamp': ts,
-                         'class': 'frame'
-                }
-                fileitem['frames'].append(frame)
-                i += 1
+        video = cv2.VideoCapture(fname)
+        i = 0
+        if progressBar is not None:
+            progressBar.setMaximum(int(video.get(cv2.CAP_PROP_FRAME_COUNT)))
+        while video.grab():
+            fileitem['frames'].append({'annotations': [], 'num': i,
+                'timestamp': video.get(cv2.CAP_PROP_POS_MSEC) / 1000,
+                'class': 'frame'})
+            i += 1
+            if progressBar is not None:
+                progressBar.setValue(i)
 
         self._model._root.appendFileItem(fileitem)
 

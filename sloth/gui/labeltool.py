@@ -448,10 +448,12 @@ class MainWindow(QMainWindow):
             
             progress_bar.setValue(c)
 
+
         if item is None:
-            return self.labeltool.addVideoFile(fname)
+            item = self.labeltool.addVideoFile(fname, progress_bar)
 
         progress_bar.close()
+
         
         return item
 
