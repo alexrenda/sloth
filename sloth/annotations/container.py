@@ -1,3 +1,4 @@
+import cv2
 import os
 import fnmatch
 import time
@@ -22,7 +23,6 @@ except ImportError:
     pass
 try:
     import okapy
-    import okapy.videoio as okv
     _use_pil = False
 except ImportError:
     try:
@@ -176,16 +176,14 @@ class AnnotationContainer:
         if fullpath in self._video_cache:
             vidsrc = self._video_cache[fullpath]
         else:
-            vidsrc = okv.createVideoSourceFromString(fullpath)
-            vidsrc = okv.toRandomAccessVideoSource(vidsrc)
+            vidsrc = cv2.VideoCapture(fullpath)
             self._video_cache[fullpath] = vidsrc
 
         # get requested frame
-        if not vidsrc.getFrame(frame_number):
-            LOG.warn("Frame %d could not be loaded from video source %s" % (frame_number, fullpath))
-            return None
-
-        return vidsrc.getImage()
+        vidsrc.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        _, im = vidsrc.read()
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        return im
 
 
 class PickleContainer(AnnotationContainer):
