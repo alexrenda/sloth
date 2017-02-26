@@ -371,8 +371,7 @@ class LabelTool(QObject):
         fileitem = {
             'filename': fname,
             'class': 'video',
-            'frames': list(progressbar_gen_wrapper()),
-            'metadata': video.metadata
+            'frames': list(progressbar_gen_wrapper())
         }
 
         self._model._root.appendFileItem(fileitem)

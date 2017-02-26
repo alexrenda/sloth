@@ -3,6 +3,7 @@ import os
 import fnmatch
 import time
 import numpy as np
+from sloth.core import videoutils
 from sloth.core.exceptions import \
     ImproperlyConfigured, NotImplementedException, InvalidArgumentException
 from sloth.core.utils import import_callable
@@ -176,12 +177,11 @@ class AnnotationContainer:
         if fullpath in self._video_cache:
             vidsrc = self._video_cache[fullpath]
         else:
-            vidsrc = cv2.VideoCapture(fullpath)
+            vidsrc = videoutils.load_video(fullpath)
             self._video_cache[fullpath] = vidsrc
 
         # get requested frame
-        vidsrc.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-        _, im = vidsrc.read()
+        im = vidsrc.get_frame(frame_number)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         return im
 
