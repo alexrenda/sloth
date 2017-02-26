@@ -85,9 +85,15 @@ HOTKEYS = (
                    lambda lt: lt.currentImage().setUnlabeled(False),
                    lambda lt: lt.gotoNext()
                   ],                                         'Mark image as labeled/confirmed and go to next'),
+    ('Shift+Space',[lambda lt: lt.currentImage().confirmAll(),
+                   lambda lt: lt.currentImage().setUnlabeled(False),
+                   lambda lt: lt.gotoNext(10)
+                  ],                                         'Mark image as labeled/confirmed and go to next'),
     ('Backspace', lambda lt: lt.gotoPrevious(),              'Previous image/frame'),
     ('PgDown',    lambda lt: lt.gotoNext(),                  'Next image/frame'),
+    ('Shift+PgDown',      lambda lt: lt.gotoNext(10),                  'Next image/frame'),
     ('PgUp',      lambda lt: lt.gotoPrevious(),              'Previous image/frame'),
+    ('Shift+PgUp',        lambda lt: lt.gotoPrevious(10),              'Previous image/frame'),
     ('Tab',       lambda lt: lt.selectNextAnnotation(),      'Select next annotation'),
     ('Shift+Tab', lambda lt: lt.selectPreviousAnnotation(),  'Select previous annotation'),
     ('Ctrl+f',    lambda lt: lt.view().fitInView(),          'Fit current image/frame into window'),
