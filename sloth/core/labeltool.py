@@ -230,6 +230,10 @@ class LabelTool(QObject):
             else:
                 raise
 
+        for fileitem in self._model.root().getAnnotations():
+            if 'filename' in fileitem:
+                fileitem['filename'] = os.path.join(os.path.dirname(fname), fileitem['filename'])
+
         self.statusMessage.emit(msg)
         self.annotationsLoaded.emit()
 
@@ -247,6 +251,10 @@ class LabelTool(QObject):
 
             # Get annotations dict
             ann = self._model.root().getAnnotations()
+            destdir = os.path.dirname(fname)
+            for fileitem in ann:
+                if 'filename' in fileitem:
+                    fileitem['filename'] = os.path.relpath(fileitem['filename'], os.path.abspath(destdir))
 
             self._container.save(ann, fname)
             #self._model.writeback() # write back changes that are cached in the model itself, e.g. mask updates
