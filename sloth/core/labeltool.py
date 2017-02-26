@@ -9,6 +9,7 @@ from PyQt4.QtCore import *
 from sloth.annotations.model import *
 from sloth.annotations.container import AnnotationContainerFactory, AnnotationContainer
 from sloth.conf import config
+from sloth.core import videoutils
 from sloth.core.cli import LaxOptionParser, BaseCommand
 from sloth.core.utils import import_callable
 from sloth import VERSION
@@ -350,25 +351,29 @@ class LabelTool(QObject):
         return self._model._root.appendFileItem(fileitem)
 
     def addVideoFile(self, fname, progressBar=None):
+        LOG.info("Importing frames from %s. This may take a while..." % fname)
+
+        video = videoutils.load_video(fname)
+
+        if progressBar is not None:
+            progressBar.setMaximum(video.get_nframes())
+
+        def progressbar_gen_wrapper():
+            i = 0
+            gen = video.gen_timestamps()
+            while True:
+                if progressBar is not None:
+                    progressBar.setValue(i)
+                fno, ts = next(gen)
+                yield {'annotations': [], 'num': fno, 'timestamp': ts, 'class': 'frame'}
+                i += 1
+
         fileitem = {
             'filename': fname,
             'class': 'video',
-            'frames': [],
+            'frames': list(progressbar_gen_wrapper()),
+            'metadata': video.metadata
         }
-
-        LOG.info("Importing frames from %s. This may take a while..." % fname)
-
-        video = cv2.VideoCapture(fname)
-        i = 0
-        if progressBar is not None:
-            progressBar.setMaximum(int(video.get(cv2.CAP_PROP_FRAME_COUNT)))
-        while video.grab():
-            fileitem['frames'].append({'annotations': [], 'num': i,
-                'timestamp': video.get(cv2.CAP_PROP_POS_MSEC) / 1000,
-                'class': 'frame'})
-            i += 1
-            if progressBar is not None:
-                progressBar.setValue(i)
 
         self._model._root.appendFileItem(fileitem)
 
