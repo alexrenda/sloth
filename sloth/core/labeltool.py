@@ -230,9 +230,11 @@ class LabelTool(QObject):
             else:
                 raise
 
-        for fileitem in self._model.root().getAnnotations():
-            if 'filename' in fileitem:
-                fileitem['filename'] = os.path.join(os.path.dirname(fname), fileitem['filename'])
+        for child in self._model.root().children():
+            if KeyValueModelItem.has_key(child, 'filename'):
+                filename = KeyValueModelItem.__getitem__(child, 'filename') # lol 
+                new_filename = os.path.join(os.path.dirname(fname), filename)
+                KeyValueModelItem.update(child, {'filename': new_filename})
 
         self.statusMessage.emit(msg)
         self.annotationsLoaded.emit()
