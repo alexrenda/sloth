@@ -4,6 +4,10 @@ import json
 import subprocess
 import tempfile
 
+import threading
+import collections
+import Queue
+
 def _parse_time_ms(time_str):
     m_epoch = datetime.strptime('0', '%S')
     num_colon = time_str.count(':')
@@ -18,7 +22,7 @@ def _parse_time_ms(time_str):
     return (m_time - m_epoch).seconds * 1000
 
 class VideoObject(object):
-    def __init__(self, filename, metadata, sample_rate=0.1):
+    def __init__(self, filename, metadata, cache_size=5):
         self.filename = filename
         self.video = cv2.VideoCapture(filename)
         self.metadata = metadata
@@ -33,12 +37,26 @@ class VideoObject(object):
             self.video.set(cv2.CAP_PROP_POS_FRAMES, self.video.get(cv2.CAP_PROP_FRAME_COUNT))
             self.end_ms = self.video.get(cv2.CAP_PROP_POS_MSEC)
 
-        if 'sample_rate' in metadata:
-            self.sample_rate = metadata['sample_rate']
-        else:
-            self.sample_rate = sample_rate
-
         self.nframes = None
+
+        self.should_cache = cache_size
+        if cache_size:
+            self.seek_q = Queue.Queue()
+            self.cache = collections.OrderedDict()
+            def seek():
+                video = cv2.VideoCapture(filename)
+                while True:
+                    frameno = self.seek_q.get()
+                    if frameno in self.cache:
+                        continue
+                    video.set(cv2.CAP_PROP_POS_FRAMES, frameno)
+                    self.cache[frameno] = video.read()[1]
+                    while len(self.cache) > cache_size:
+                        del self.cache[self.cache.keys()[0]]
+
+            self.seek_thread = threading.Thread(target=seek)
+            self.seek_thread.daemon = True
+            self.seek_thread.start()
 
     def get_nframes(self):
         if self.nframes is None:
@@ -60,9 +78,20 @@ class VideoObject(object):
             self.video.grab()
 
     def get_frame(self, frameno):
-        if self.video.get(cv2.CAP_PROP_POS_FRAMES) != frameno:
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, frameno)
-        return self.video.read()[1]
+        frameno = int(frameno)
+        curr_frameno = int(self.video.get(cv2.CAP_PROP_POS_FRAMES))
+        try:
+            res = self.cache[frameno]
+        except:
+            if curr_frameno != frameno:
+                self.video.set(cv2.CAP_PROP_POS_FRAMES, frameno)
+            res = self.video.read()[1]
+        if self.should_cache:
+            delta = frameno - (curr_frameno - 1)
+            if delta > 0:
+                self.seek_q.put(frameno + delta)
+        return res
+
 
 class RemoteVideo(VideoObject):
     def __init__(self, metadata):
