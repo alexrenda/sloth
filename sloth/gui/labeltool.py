@@ -420,10 +420,7 @@ class MainWindow(QMainWindow):
         return False
 
     def addMediaFile(self):
-        path = '.'
         filename = self.labeltool.getCurrentFilename()
-        if (filename is not None) and (len(filename) > 0):
-            path = QFileInfo(filename).path()
 
         image_types = [ '*.jpg', '*.bmp', '*.png', '*.pgm', '*.ppm', '*.ppm', '*.tif', '*.gif' ]
         video_types = [ '*.mp4', '*.mpg', '*.mpeg', '*.avi', '*.mov', '*.vob', '*.json' ]
@@ -440,7 +437,7 @@ class MainWindow(QMainWindow):
             fname = str(fname)
 
             if os.path.isabs(fname):
-                fname = os.path.relpath(fname, str(path))
+                fname = os.path.relpath(fname)
 
             for pattern in image_types:
                 if fnmatch.fnmatch(fname, pattern):
