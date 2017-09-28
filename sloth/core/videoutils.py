@@ -6,7 +6,11 @@ import tempfile
 
 import threading
 import collections
-import Queue
+
+try:
+    import Queue as queue
+except ImportError:
+    import queue as queue
 
 def _parse_time_ms(time_str):
     m_epoch = datetime.strptime('0', '%S')
@@ -41,7 +45,7 @@ class VideoObject(object):
 
         self.should_cache = cache_size
         if cache_size:
-            self.seek_q = Queue.Queue()
+            self.seek_q = queue.Queue()
             self.cache = collections.OrderedDict()
             def seek():
                 video = cv2.VideoCapture(filename)
@@ -126,5 +130,4 @@ def load_video_from_metadata(metadata_fname):
             return VideoObject(path, metadata)
 
 def load_video_from_video_file(fname):
-    return VideoObject(fname, {'path': fname}) 
-
+    return VideoObject(fname, {'path': fname})
