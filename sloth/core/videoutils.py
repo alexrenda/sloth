@@ -56,7 +56,8 @@ class VideoObject(object):
                     video.set(cv2.CAP_PROP_POS_FRAMES, frameno)
                     self.cache[frameno] = video.read()[1]
                     while len(self.cache) > cache_size:
-                        del self.cache[self.cache.keys()[0]]
+                        key_to_delete = next(iter(self.cache.keys()))
+                        del self.cache[key_to_delete]
 
             self.seek_thread = threading.Thread(target=seek)
             self.seek_thread.daemon = True
